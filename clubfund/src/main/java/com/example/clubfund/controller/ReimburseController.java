@@ -39,4 +39,13 @@ public class ReimburseController {
     public Result audit(@RequestBody ReimburseAuditDTO auditDTO) {
         return reimburseService.audit(auditDTO);
     }
+
+    /**
+     * 用户查看自己的报销记录
+     */
+    @GetMapping("/my/list")
+    public Result myList(@RequestParam(defaultValue = "1") Integer pageNum,
+                         @RequestParam(defaultValue = "10") Integer pageSize) {
+        return reimburseService.listMyReimbursements(pageNum, pageSize);
+    }
 }

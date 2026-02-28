@@ -13,10 +13,18 @@
         <template #default="{ row }">
           <el-image
             style="width: 100px; height: 100px"
-            :src="row.voucherUrl"
-            :preview-src-list="[row.voucherUrl]"
+            :src="getImageUrl(row.voucherUrl)"
+            :preview-src-list="[getImageUrl(row.voucherUrl)]"
             fit="cover"
-          />
+            :hide-on-click-modal="true"
+          >
+            <template #error>
+              <div class="image-error">
+                <el-icon><picture-filled /></el-icon>
+                <span>加载失败</span>
+              </div>
+            </template>
+          </el-image>
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
@@ -59,22 +67,70 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="pagination.total"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import request from "@/utils/request";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { PictureFilled } from '@element-plus/icons-vue';
 
 const tableData = ref([]);
+
+// 分页配置
+const pagination = reactive({
+  pageNum: 1,
+  pageSize: 20,
+  total: 0
+});
+
+// 获取图片完整 URL
+const getImageUrl = (url) => {
+  if (!url) return '';
+  // 如果已经是完整 URL，直接返回
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  // 否则拼接后端服务器地址
+  return 'http://localhost:8080' + url;
+};
 
 const fetchList = async () => {
   // 传 status=null 查所有，或者默认查待核销，这里演示查所有
   const res = await request.get("/reimburse/list", {
-    params: { pageNum: 1, pageSize: 20 },
+    params: { 
+      pageNum: pagination.pageNum, 
+      pageSize: pagination.pageSize 
+    },
   });
   tableData.value = res.data.records;
+  pagination.total = res.data.total;
+};
+
+// 分页大小改变
+const handleSizeChange = (size) => {
+  pagination.pageSize = size;
+  pagination.pageNum = 1; // 重置到第一页
+  fetchList();
+};
+
+// 页码改变
+const handleCurrentChange = (page) => {
+  pagination.pageNum = page;
+  fetchList();
 };
 
 const handleAudit = (row, status) => {
@@ -95,3 +151,29 @@ const handleAudit = (row, status) => {
 
 onMounted(() => fetchList());
 </script>
+
+<style scoped>
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.image-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  background-color: #f5f7fa;
+  color: #909399;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.image-error .el-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+</style>

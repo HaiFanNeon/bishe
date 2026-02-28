@@ -101,7 +101,6 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         user.setPhone(updateDTO.getPhone());
         user.setStudentId(updateDTO.getStudentId());
         user.setClubName(updateDTO.getClubName());
-
         baseMapper.updateById(user);
         return Result.success("更新成功");
     }

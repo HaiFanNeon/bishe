@@ -25,3 +25,8 @@ mybatis-plus:
 jwt:
   secret: clubfund_secret_key_2026 # 密钥
   expiration: 86400000 # 24小时
+
+# 文件上传配置
+file:
+  upload:
+    path: ./uploads

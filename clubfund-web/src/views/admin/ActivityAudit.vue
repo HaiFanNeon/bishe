@@ -9,7 +9,7 @@
       <el-table-column prop="title" label="活动标题" />
       <el-table-column prop="clubName" label="申请社团" width="150" />
       <el-table-column prop="realName" label="申请人" width="120" />
-      <el-table-column prop="budgetAmount" label="预算(元)" width="120" />
+      <el-table-column prop="budgetAmount" label="预算 (元)" width="120" />
       <el-table-column prop="status" label="状态" width="120">
         <template #default="{ row }">
           <el-tag v-if="row.status === 0">待审核</el-tag>
@@ -33,6 +33,18 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-container">
+      <el-pagination
+        v-model:current-page="pagination.pageNum"
+        v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="pagination.total"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+      />
+    </div>
 
     <el-dialog v-model="auditVisible" title="活动审核">
       <p><strong>活动：</strong>{{ currentRow.title }}</p>
@@ -102,17 +114,41 @@ const currentRow = ref({});
 const detailData = ref(null);
 const auditForm = reactive({ applyId: null, action: 1, comment: "" });
 
+// 分页配置
+const pagination = reactive({
+  pageNum: 1,
+  pageSize: 20,
+  total: 0
+});
+
 const fetchList = async () => {
   const status = activeTab.value === "all" ? null : parseInt(activeTab.value);
   const res = await request.post("/activity/list", {
-    pageNum: 1,
-    pageSize: 20,
+    pageNum: pagination.pageNum,
+    pageSize: pagination.pageSize,
     status,
   });
   tableData.value = res.data.records;
+  pagination.total = res.data.total;
 };
 
-const handleTabChange = () => fetchList();
+const handleTabChange = () => {
+  pagination.pageNum = 1; // 切换标签时重置到第一页
+  fetchList();
+};
+
+// 分页大小改变
+const handleSizeChange = (size) => {
+  pagination.pageSize = size;
+  pagination.pageNum = 1; // 重置到第一页
+  fetchList();
+};
+
+// 页码改变
+const handleCurrentChange = (page) => {
+  pagination.pageNum = page;
+  fetchList();
+};
 
 const viewDetail = async (id) => {
   const res = await request.get(`/activity/detail/${id}`);
@@ -142,3 +178,11 @@ const getActionText = (action) => {
 
 onMounted(() => fetchList());
 </script>
+
+<style scoped>
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

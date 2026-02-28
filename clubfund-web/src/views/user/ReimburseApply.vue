@@ -39,8 +39,10 @@
             <el-form-item label="财务凭证 (发票/收据)">
               <el-upload
                 class="upload-demo"
-                action="http://localhost:8080/common/upload"
+                :action="uploadUrl"
+                :headers="uploadHeaders"
                 :on-success="handleUploadSuccess"
+                :on-error="handleUploadError"
                 :limit="1"
                 list-type="picture"
               >
@@ -53,7 +55,7 @@
               </el-upload>
               <el-input
                 v-model="form.voucherUrl"
-                placeholder="或直接输入图片URL"
+                placeholder="或直接输入图片 URL"
                 style="margin-top: 5px"
               />
             </el-form-item>
@@ -99,12 +101,19 @@ const form = reactive({
   description: "",
   voucherUrl: "",
 });
+
+// 上传配置
+const uploadUrl = 'http://localhost:8080/common/upload';
+const uploadHeaders = {
+  'Authorization': localStorage.getItem('token') || ''
+};
+
 const approvedActivities = ref([]);
 const reimburseList = ref([]);
 
 // 1. 获取我可以报销的活动（必须是已批准 status=1）
 const loadApprovedActivities = async () => {
-  // 复用 activity 查询接口，查自己的 + 状态为1的
+  // 复用 activity 查询接口，查自己的 + 状态为 1 的
   const res = await request.post("/activity/my/list", {
     status: 1,
     pageSize: 100,
@@ -121,8 +130,18 @@ const loadReimburseList = async () => {
 // 上传成功回调
 const handleUploadSuccess = (res) => {
   // 假设后端返回 { code: 200, data: 'url...' }
-  form.voucherUrl = res.data;
-  ElMessage.success("凭证上传成功");
+  if (res.code === 200) {
+    form.voucherUrl = res.data;
+    ElMessage.success("凭证上传成功");
+  } else {
+    ElMessage.error(res.msg || "上传失败");
+  }
+};
+
+// 上传错误回调
+const handleUploadError = (error) => {
+  console.error('Upload error:', error);
+  ElMessage.error("上传失败：" + (error.message || "未知错误"));
 };
 
 // 提交
